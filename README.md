@@ -75,6 +75,8 @@ Full rules, the PHP2Shell worked example, and plain-language explanations for ea
 | CI | `php-version`, `node-version`, `python-version`, `ruby-version`, `go-version` in `.github/workflows/*.yml` |
 | This machine | `--local`: `php -v`, `node -v`, `python --version`, `ruby -v`, `go version`, `nginx -v` for the runtimes the project uses |
 
+Skip directories (demo apps, vendored code, fixtures) with a `.patchnow.json` in the project root: `{ "ignore": ["examples", "test/fixtures"] }`.
+
 ## Data sources
 
 All public, all free, no API keys:

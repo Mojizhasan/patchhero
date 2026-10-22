@@ -157,3 +157,10 @@ test('groupFindings takes the worst priority, unions CVEs and prefers a same-maj
   assert.deepEqual(jump[0].partialFix.needsMajor, ['CVE-3']);
   assert.ok(LEVELS.includes(jump[0].priority));
 });
+
+test('.patchnow.json ignore prefixes keep demo projects out of the inventory', () => {
+  const repoRoot = path.join(FIX, '..', '..');
+  const files = findManifests(repoRoot);
+  assert.ok(files.includes('package.json'), 'the repo root manifest is still found');
+  assert.ok(!files.some((f) => f.startsWith('examples/') || f.startsWith('test/fixtures/')), `ignored paths leaked: ${files.filter((f) => /^(examples|test\/fixtures)\//.test(f)).join(', ')}`);
+});

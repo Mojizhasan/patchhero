@@ -174,12 +174,22 @@ const SKIP_DIRS = new Set(['node_modules', 'vendor', '.git', 'dist', 'build', '.
 
 const MANIFEST_RE = /^(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|composer\.json|composer\.lock|requirements[^/]*\.txt|Pipfile\.lock|poetry\.lock|uv\.lock|pdm\.lock|pyproject\.toml|go\.mod|Cargo\.lock|Gemfile|Gemfile\.lock|packages\.lock\.json|.*\.csproj|pom\.xml|gradle\.lockfile|Dockerfile[^/]*|.*\.dockerfile|(docker-)?compose[^/]*\.ya?ml|\.php-version|\.nvmrc|\.node-version|\.python-version|\.ruby-version|\.tool-versions|runtime\.txt|\.go-version)$/i;
 
+/** Optional per-project config: `.patchnow.json` with {"ignore": ["examples", "test/fixtures"]} (directory prefixes relative to the project). */
+export function projectConfig(root) {
+  const cfg = readJson(path.join(root, '.patchnow.json')) || {};
+  const ignore = (Array.isArray(cfg.ignore) ? cfg.ignore : []).map((p) => String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/\*\*?$/, '').replace(/\/$/, '')).filter(Boolean);
+  return { ignore };
+}
+
 export function findManifests(root, maxDepth = 4) {
   const found = [];
+  const { ignore } = projectConfig(root);
+  const ignored = (rel) => ignore.some((p) => rel === p || rel.startsWith(p + '/'));
   const walk = (dir, depth) => {
     let entries; try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
     for (const e of entries) {
       const full = path.join(dir, e.name);
+      if (ignore.length && ignored(path.relative(root, full).split(path.sep).join('/'))) continue;
       if (e.isDirectory()) {
         if (SKIP_DIRS.has(e.name)) continue;
         if (e.name === '.github' && depth < maxDepth) { walk(full, depth + 1); continue; }

@@ -29,6 +29,8 @@ Useful flags:
 | `--fail-on P0` | CI: exit code 2 when something must be patched today |
 | `--offline` | the network is down; uses cached feed data |
 
+A project can exclude directories (demo apps, fixtures, vendored code) with a `.patchnow.json` at its root: `{ "ignore": ["examples", "test/fixtures"] }`. Suggest it when a scan is dominated by findings in directories that are clearly not the deployed app.
+
 The report groups by component: one line per package@version or runtime reference, with the worst CVE, how many more it fixes, the reasons for its priority, and the exact command. Priority levels are P0 patch today, P1 this week, P2 next release, P3 backlog. Read `references/priority.md` when you need to explain *why* something is P0 or when the user disagrees with a priority.
 
 ## Workflow
