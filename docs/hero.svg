@@ -73,7 +73,7 @@
         <text x="0" y="8" text-anchor="middle" fill="#ffb3ad">WannaCry</text>
         <line x1="-72" y1="-2" x2="72" y2="3" stroke="#ff5a5f" stroke-width="3"/>
       </g>
-      <g transform="translate(760 150) rotate(4)">
+      <g transform="translate(905 135) rotate(4)">
         <rect x="-84" y="-18" width="168" height="36" rx="6" fill="#3a0f1d" stroke="#ff7b72" stroke-width="2"/>
         <text x="0" y="8" text-anchor="middle" fill="#ffb3ad">Log4Shell</text>
         <path d="M-30 -18 L-22 -4 L-36 8 L-26 18" stroke="#ffd166" stroke-width="2" fill="none"/>
