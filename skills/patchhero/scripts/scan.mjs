@@ -467,7 +467,8 @@ async function feedEpss(cves, opts) {
 export const UNIVERSAL_TERMS = ['windows', 'linux', 'kernel', 'macos', 'ios', 'android', 'chrome', 'chromium', 'firefox', 'safari', 'edge browser',
   'openssl', 'openssh', 'ssh', 'glibc', 'sudo', 'systemd', 'docker', 'kubernetes', 'git', 'curl', 'intel', 'amd', 'arm', 'cpu', 'processor', 'firmware',
   'bios', 'uefi', 'microcode', 'vmware', 'wifi', 'wi-fi', 'bluetooth', 'dns', 'tls', 'router', 'cisco', 'fortinet', 'palo alto', 'citrix', 'ivanti',
-  'exchange server', 'sharepoint', 'outlook', 'microsoft office', '7-zip', 'winrar', 'java', 'jvm', 'log4j', 'xz', 'npm', 'pypi', 'github actions', 'cloudflare', 'aws', 'azure'];
+  'exchange server', 'sharepoint', 'outlook', 'microsoft office', '7-zip', 'winrar', 'java', 'jvm', 'log4j', 'xz', 'npm', 'pypi', 'github actions', 'cloudflare', 'aws', 'azure',
+  'cpanel', 'plesk', 'whm', 'teamcity', 'supply chain'];
 
 const PRODUCT_TERMS = { php: ['php'], node: ['node.js', 'nodejs', 'node js'], python: ['python', 'cpython'], ruby: ['ruby', 'rails'], go: ['golang', 'go toolchain'], nginx: ['nginx'], wordpress: ['wordpress'] };
 /** Products the news names often. Used to label and cluster headlines even when this project does not use them; they never count as "touches". */
@@ -476,7 +477,7 @@ const KNOWN_TERMS = [...new Set(Object.values(PRODUCT_TERMS).flat())].concat(['d
 const TERM_LABELS = { php: 'PHP', 'node.js': 'Node.js', nodejs: 'Node.js', 'node js': 'Node.js', python: 'Python', cpython: 'Python', ruby: 'Ruby', rails: 'Rails', golang: 'Go', nginx: 'nginx', wordpress: 'WordPress',
   linux: 'Linux', kernel: 'Linux kernel', windows: 'Windows', macos: 'macOS', ios: 'iOS', android: 'Android', chrome: 'Chrome', chromium: 'Chromium', firefox: 'Firefox', safari: 'Safari', openssl: 'OpenSSL', openssh: 'OpenSSH',
   docker: 'Docker', kubernetes: 'Kubernetes', git: 'Git', curl: 'curl', intel: 'Intel CPUs', amd: 'AMD CPUs', cpu: 'CPUs', processor: 'processors', firmware: 'firmware', vmware: 'VMware', cloudflare: 'Cloudflare', aws: 'AWS', azure: 'Azure',
-  'github actions': 'GitHub Actions', npm: 'npm', pypi: 'PyPI', java: 'Java', log4j: 'Log4j', xz: 'xz', glibc: 'glibc', sudo: 'sudo', systemd: 'systemd', django: 'Django', laravel: 'Laravel', react: 'React', 'next.js': 'Next.js', jenkins: 'Jenkins', gitlab: 'GitLab' };
+  'github actions': 'GitHub Actions', cpanel: 'cPanel', plesk: 'Plesk', whm: 'WHM', teamcity: 'TeamCity', 'supply chain': 'a package supply-chain attack', npm: 'npm', pypi: 'PyPI', java: 'Java', log4j: 'Log4j', xz: 'xz', glibc: 'glibc', sudo: 'sudo', systemd: 'systemd', django: 'Django', laravel: 'Laravel', react: 'React', 'next.js': 'Next.js', jenkins: 'Jenkins', gitlab: 'GitLab' };
 const termLabel = (t) => TERM_LABELS[t] || t;
 const ECOSYSTEM_TERMS = { npm: ['npm'], Packagist: ['composer', 'packagist'], PyPI: ['pypi', 'pip'], Go: ['go module'], 'crates.io': ['crates.io', 'cargo'], RubyGems: ['rubygems'], NuGet: ['nuget'], Maven: ['maven'] };
 const TERM_STOPLIST = new Set(['core', 'utils', 'util', 'common', 'test', 'tests', 'types', 'tools', 'client', 'server', 'base', 'config', 'plugin', 'runtime', 'support', 'shared', 'framework', 'security', 'update', 'patch']);
