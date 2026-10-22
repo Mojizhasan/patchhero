@@ -23,6 +23,7 @@ import { scanProject, renderHook, findManifests, log } from '../skills/patchhero
 const SCAN_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'patchhero', 'scripts', 'scan.mjs');
 const CACHE_DIR = process.env.PATCHHERO_CACHE_DIR || path.join(os.homedir(), '.cache', 'patchhero');
 const PROJECT_TTL_MS = 6 * 3600 * 1000;
+const EMERGENCY_TTL_MS = 3600 * 1000; // while something is spreading, re-check every hour
 const DEADLINE_MS = 25_000;
 
 function readStdin() {
@@ -63,7 +64,8 @@ async function main() {
   const cacheFile = path.join(CACHE_DIR, 'projects', crypto.createHash('sha1').update(root).digest('hex') + '.json');
   try {
     const c = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-    if (c.hash === hash && Date.now() - c.ts < PROJECT_TTL_MS) { if (c.text) process.stdout.write(c.text + '\n'); return; }
+    const ttl = c.emergency ? EMERGENCY_TTL_MS : PROJECT_TTL_MS;
+    if (c.hash === hash && Date.now() - c.ts < ttl) { if (c.text) process.stdout.write(c.text + '\n'); return; }
   } catch { /* no cache */ }
 
   log.quiet = true;
@@ -73,7 +75,8 @@ async function main() {
     new Promise((_, reject) => setTimeout(() => reject(new Error(`scan exceeded ${DEADLINE_MS}ms`)), DEADLINE_MS)),
   ]);
   const text = renderHook(report, SCAN_SCRIPT);
-  try { fs.mkdirSync(path.dirname(cacheFile), { recursive: true }); fs.writeFileSync(cacheFile, JSON.stringify({ hash, ts: Date.now(), text, root })); } catch { /* ignore */ }
+  const emergency = !!report.siren?.emergency;
+  try { fs.mkdirSync(path.dirname(cacheFile), { recursive: true }); fs.writeFileSync(cacheFile, JSON.stringify({ hash, ts: Date.now(), text, root, emergency })); } catch { /* ignore */ }
   if (text) process.stdout.write(text + '\n');
 }
 

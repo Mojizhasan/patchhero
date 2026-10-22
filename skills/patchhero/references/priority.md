@@ -11,6 +11,7 @@ The point of the priority score is to answer "what is getting traction right now
 | EPSS | FIRST.org | probability of exploitation in the next 30 days | also lags: PHP2Shell scored 5% on day one |
 | Disclosure age | advisory published date | fresh criticals draw attackers and press | old CVEs can still be exploited |
 | Emergency vendor release | endoflife.date latest release date | the vendor broke its release cadence to ship a fix | only meaningful for the CVEs that release fixed |
+| Spreading now (siren) | CISA alerts, KEV additions in the last 3 days, Hacker News front page, Google News headlines | the world is reacting: press, security teams, governments | news is noisy and names products, not versions; it is matched to this project's components and never used alone |
 
 ## Rules
 
@@ -21,8 +22,19 @@ Levels: **P0** patch today, **P1** patch this week, **P2** next release, **P3** 
 3. EPSS 30% or more: P0. EPSS 5% or more: at least P1.
 4. Disclosed within the last 14 days and CVSS 7.0 or more: one level more urgent.
 5. The vendor shipped a release in the last 14 days and the CVE itself is less than 30 days old: one level more urgent. Older CVEs on the same runtime are not bumped; the release was not for them.
-6. Dev-only dependency (test or build tooling): one level less urgent, unless in KEV.
-7. Unpinned context (a composer.json constraint, `engines.node`, a CI matrix): the report adds "deployed version not pinned; verify on the server". Only hot CVEs (KEV, or CVSS 7+ and under 30 days old) are reported for unpinned contexts, otherwise every project that says `"php": "^8.2"` would drown in historical PHP CVEs.
+6. Spreading now: a headline, CISA alert or fresh KEV entry names one of the finding's CVEs, or names the product while the CVE is under 30 days old: one level more urgent. The report's "spreading now" section lists what matched and the evidence (Hacker News points, number of headlines, CISA alert).
+7. Dev-only dependency (test or build tooling): one level less urgent, unless in KEV.
+8. Unpinned context (a composer.json constraint, `engines.node`, a CI matrix): the report adds "deployed version not pinned; verify on the server". Only hot CVEs (KEV, or CVSS 7+ and under 30 days old) are reported for unpinned contexts, otherwise every project that says `"php": "^8.2"` would drown in historical PHP CVEs.
+
+## The siren: what is spreading, with or without this project
+
+The "spreading now" section is independent of the findings. It clusters the last 48 hours of headlines (Hacker News stories with 30+ points, Google News, CISA alerts) and the last 3 days of KEV additions by the product or CVE they name, then keeps three kinds:
+
+- **affects this project**: the cluster names a runtime, ecosystem or package this project uses;
+- **not in this repo, but on your servers and laptop**: it names software nearly everyone runs (operating systems, CPUs, OpenSSL, OpenSSH, Docker, browsers, Cloudflare, AWS); the fix is an OS or firmware update where the app runs, not a change in the repo;
+- **everyone is talking about it**: a front-page story (500+ Hacker News points, 8+ headlines, or CISA alert plus KEV) about something else entirely. One line, so nobody learns about the next Log4Shell from a customer.
+
+A cluster that touches the project with strong evidence, or a universal one backed by CISA or KEV, puts the session-start hook into emergency mode: it re-checks every hour instead of every six. The queries are fixed strings; nothing about the project is sent to any news source. `--news` shows every cluster, `--no-news` turns the feeds off.
 
 A component's priority is its worst finding's priority. The recommended version is the smallest upgrade that closes every advisory on the current major; when some advisory is only fixed on a newer major line, the report says so and shows what the current line can still fix.
 

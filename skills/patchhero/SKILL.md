@@ -27,7 +27,11 @@ Useful flags:
 | `--min P1` | the full list is long and the user only cares what is urgent |
 | `--all` | the directory is a folder of projects (`~/projects`), to get one table across all of them |
 | `--fail-on P0` | CI: exit code 2 when something must be patched today |
+| `--news` | the user asks "what is going on out there?"; shows every story spreading, not only the ones touching this project |
+| `--no-news` | the user wants no news feeds consulted (air-gapped or just quiet) |
 | `--offline` | the network is down; uses cached feed data |
+
+The report's **"spreading now"** section is the siren: the last 48 hours of CISA alerts, KEV additions, Hacker News front page and Google News headlines, clustered by product and marked "affects this project", "not in this repo, but on your servers and laptop", or "everyone is talking about it". Treat the three differently: the first is a finding with press behind it (its components already carry "spreading now" in their reasons); the second means the user should update the operating system, firmware or that software wherever the app runs, and nothing in the repo changes; the third is one sentence of awareness, not work. `references/priority.md` explains the thresholds.
 
 A project can exclude directories (demo apps, fixtures, vendored code) with a `.patchhero.json` at its root: `{ "ignore": ["examples", "test/fixtures"] }`. Suggest it when a scan is dominated by findings in directories that are clearly not the deployed app.
 
@@ -61,7 +65,7 @@ Run the scan with `--json` and search it for the CVE id, the package, or the pro
 
 When the user wants this to "just happen" for all their projects, there are three layers. Say which ones they already have.
 
-- **Session-start alert**: included with the plugin install (a SessionStart hook that runs the scanner, cached for six hours, read-only). Installed as a bare skill, there is no hook: offer to add one to `~/.claude/settings.json`:
+- **Session-start alert**: included with the plugin install (a SessionStart hook that runs the scanner, cached for six hours, read-only; while something is spreading it re-checks hourly, and it speaks up about a siren even when the project's own dependencies are clean). Installed as a bare skill, there is no hook: offer to add one to `~/.claude/settings.json`:
   ```json
   { "hooks": { "SessionStart": [{ "matcher": "startup|resume|clear|compact", "hooks": [{ "type": "command", "command": "node \"<skill dir>/scripts/scan.mjs\" --hook", "timeout": 30 }] }] } }
   ```

@@ -1,37 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="784" viewBox="0 0 1100 784" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13">
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="938" viewBox="0 0 1100 938" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13">
 <rect width="100%" height="100%" rx="10" fill="#0d1117"/>
 <circle cx="22" cy="22" r="6" fill="#ff5f56"/><circle cx="42" cy="22" r="6" fill="#ffbd2e"/><circle cx="62" cy="22" r="6" fill="#27c93f"/>
 <text x="550" y="26" text-anchor="middle" fill="#8b949e" font-size="12">node scan.mjs examples/php-app — 22 Oct 2026, the morning after PHP2Shell</text>
 <text x="24" y="56" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">php-app</tspan><tspan fill="#d4d4d4"> — 4 packages, 3 runtime refs · 4 components to patch covering 22 CVEs · <tspan fill="#ff7b72">P0:2</tspan> <tspan fill="#e3b341">P1:1</tspan> <tspan fill="#79c0ff">P2:1</tspan> P3:0</tspan></text>
 <text x="24" y="78" xml:space="preserve"><tspan fill="#d4d4d4"></tspan></text>
-<text x="24" y="100" xml:space="preserve"><tspan fill="#ff7b72" font-weight="bold">P0  PATCH TODAY</tspan></text>
-<text x="24" y="122" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  PHP 8.3.30 (Dockerfile:1)</tspan><tspan fill="#7ee787"> → 8.3.36</tspan></text>
-<text x="24" y="144" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-109618: PHP uses longjmp() for out-of-memory (OOM) errors to exit the current context and abort handling of</tspan></text>
-<text x="24" y="166" xml:space="preserve"><tspan fill="#d4d4d4">          the request. (+4 more: CVE-2026-109619, CVE-2026-17543, CVE-2026-14355, CVE-2026-7260)</tspan></text>
-<text x="24" y="188" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 9.2 critical · EPSS 5.3% (top 7% of all CVEs) · disclosed yesterday · vendor shipped an emergency release on</tspan></text>
-<text x="24" y="210" xml:space="preserve"><tspan fill="#d4d4d4">          2026-10-21 · 5 advisories on this version</tspan></text>
-<text x="24" y="232" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Dockerfile:1: change 8.3.30 → 8.3.36</tspan></text>
-<text x="24" y="254" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Rebuild and redeploy the image</tspan></text>
-<text x="24" y="276" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  PHP 8.2 (composer.json)</tspan><tspan fill="#7ee787"> → 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12</tspan></text>
-<text x="24" y="298" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-109618: PHP uses longjmp() for out-of-memory (OOM) errors to exit the current context and abort handling of</tspan></text>
-<text x="24" y="320" xml:space="preserve"><tspan fill="#d4d4d4">          the request. (+1 more: CVE-2026-109619)</tspan></text>
-<text x="24" y="342" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 9.2 critical · EPSS 5.3% (top 7% of all CVEs) · disclosed yesterday · vendor shipped an emergency release on</tspan></text>
-<text x="24" y="364" xml:space="preserve"><tspan fill="#d4d4d4">          2026-10-21 · deployed version not pinned in repo — verify on the server · 2 advisories on this version</tspan></text>
-<text x="24" y="386" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Check the PHP version on every server/host running this app (php -v); fixed releases: 8.2.35 / 8.3.36 / 8.4.27 /</tspan></text>
-<text x="24" y="408" xml:space="preserve"><tspan fill="#d4d4d4">          8.5.12 (pick the one on your line)</tspan></text>
-<text x="24" y="430" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Managed hosting: switch the PHP version in the control panel · Docker: rebuild from a patched base image · OS</tspan></text>
-<text x="24" y="452" xml:space="preserve"><tspan fill="#d4d4d4">          packages: apt/dnf upgrade php</tspan></text>
-<text x="24" y="474" xml:space="preserve"><tspan fill="#d4d4d4"></tspan></text>
-<text x="24" y="496" xml:space="preserve"><tspan fill="#e3b341" font-weight="bold">P1  PATCH THIS WEEK</tspan></text>
-<text x="24" y="518" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  guzzlehttp/guzzle 7.4.0 (composer.lock)</tspan><tspan fill="#7ee787"> → 7.15.2</tspan></text>
-<text x="24" y="540" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2022-29248: Cross-domain cookie leakage in Guzzle (+13 more: CVE-2022-31090, CVE-2022-31091, CVE-2022-31042,</tspan></text>
-<text x="24" y="562" xml:space="preserve"><tspan fill="#d4d4d4">          CVE-2022-31043, …)</tspan></text>
-<text x="24" y="584" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 8 high · 13 advisories on this version</tspan></text>
-<text x="24" y="606" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> composer require guzzlehttp/guzzle:^7.15.2 --update-with-all-dependencies</tspan></text>
-<text x="24" y="628" xml:space="preserve"><tspan fill="#d4d4d4"></tspan></text>
-<text x="24" y="650" xml:space="preserve"><tspan fill="#79c0ff" font-weight="bold">P2  NEXT RELEASE</tspan></text>
-<text x="24" y="672" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  phpunit/phpunit 9.5.0 (composer.lock, dev)</tspan><tspan fill="#7ee787"> → 9.6.33</tspan></text>
-<text x="24" y="694" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-24765: PHPUnit Vulnerable to Unsafe Deserialization in PHPT Code Coverage Handling</tspan></text>
-<text x="24" y="716" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 7.8 high · dev-only dependency</tspan></text>
-<text x="24" y="738" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> composer require phpunit/phpunit:^9.6.33 --update-with-all-dependencies</tspan></text>
+<text x="24" y="100" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">🔥 SPREADING NOW (last 48h)</tspan><tspan fill="#d4d4d4"> — emergency: re-checking hourly</tspan></text>
+<text x="24" y="122" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  PHP</tspan><tspan fill="#7ee787"> → affects this project</tspan></text>
+<text x="24" y="144" xml:space="preserve"><tspan fill="#d4d4d4">    "Critical Vulnerabilities in PHP Require Immediate Patching" — CISA alert · Hacker News 601 points · 61 headlines</tspan></text>
+<text x="24" y="166" xml:space="preserve"><tspan fill="#d4d4d4">          (Mashable, CNBC, CBS News, The New York Times)</tspan></text>
+<text x="24" y="188" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-109618, CVE-2026-109619</tspan></text>
+<text x="24" y="210" xml:space="preserve"><tspan fill="#d4d4d4">    https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching</tspan></text>
+<text x="24" y="232" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  Linux</tspan><tspan fill="#7ee787"> → not in this repo, but on your servers and laptop</tspan></text>
+<text x="24" y="254" xml:space="preserve"><tspan fill="#d4d4d4">    "Several Linux kernel vulnerabilities accidentally posted to public mailing list" — Hacker News 229 points · 2</tspan></text>
+<text x="24" y="276" xml:space="preserve"><tspan fill="#d4d4d4">          headlines (The Hacker News, Phoronix)</tspan></text>
+<text x="24" y="298" xml:space="preserve"><tspan fill="#d4d4d4">    https://www.phoronix.com/news/LKML-New-Trend-Vulnerabilities</tspan></text>
+<text x="24" y="320" xml:space="preserve"><tspan fill="#d4d4d4"></tspan></text>
+<text x="24" y="342" xml:space="preserve"><tspan fill="#ff7b72" font-weight="bold">P0  PATCH TODAY</tspan></text>
+<text x="24" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  PHP 8.3.30 (Dockerfile:1)</tspan><tspan fill="#7ee787"> → 8.3.36</tspan></text>
+<text x="24" y="386" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-109618: PHP uses longjmp() for out-of-memory (OOM) errors to exit the current context and abort handling of</tspan></text>
+<text x="24" y="408" xml:space="preserve"><tspan fill="#d4d4d4">          the request. (+4 more: CVE-2026-109619, CVE-2026-17543, CVE-2026-14355, CVE-2026-7260)</tspan></text>
+<text x="24" y="430" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 9.2 critical · EPSS 5.3% (top 7% of all CVEs) · disclosed yesterday · vendor shipped an emergency release on</tspan></text>
+<text x="24" y="452" xml:space="preserve"><tspan fill="#d4d4d4">          2026-10-21 · spreading now: Hacker News 601 points, 61 news headlines, CISA alert in the last 48h · 5 advisories</tspan></text>
+<text x="24" y="474" xml:space="preserve"><tspan fill="#d4d4d4">          on this version</tspan></text>
+<text x="24" y="496" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Dockerfile:1: change 8.3.30 → 8.3.36</tspan></text>
+<text x="24" y="518" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Rebuild and redeploy the image</tspan></text>
+<text x="24" y="540" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  PHP 8.2 (composer.json)</tspan><tspan fill="#7ee787"> → 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12</tspan></text>
+<text x="24" y="562" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2026-109618: PHP uses longjmp() for out-of-memory (OOM) errors to exit the current context and abort handling of</tspan></text>
+<text x="24" y="584" xml:space="preserve"><tspan fill="#d4d4d4">          the request. (+1 more: CVE-2026-109619)</tspan></text>
+<text x="24" y="606" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 9.2 critical · EPSS 5.3% (top 7% of all CVEs) · disclosed yesterday · vendor shipped an emergency release on</tspan></text>
+<text x="24" y="628" xml:space="preserve"><tspan fill="#d4d4d4">          2026-10-21 · spreading now: Hacker News 601 points, 61 news headlines, CISA alert in the last 48h · deployed</tspan></text>
+<text x="24" y="650" xml:space="preserve"><tspan fill="#d4d4d4">          version not pinned in repo — verify on the server · 2 advisories on this version</tspan></text>
+<text x="24" y="672" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Check the PHP version on every server/host running this app (php -v); fixed releases: 8.2.35 / 8.3.36 / 8.4.27 /</tspan></text>
+<text x="24" y="694" xml:space="preserve"><tspan fill="#d4d4d4">          8.5.12 (pick the one on your line)</tspan></text>
+<text x="24" y="716" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> Managed hosting: switch the PHP version in the control panel · Docker: rebuild from a patched base image · OS</tspan></text>
+<text x="24" y="738" xml:space="preserve"><tspan fill="#d4d4d4">          packages: apt/dnf upgrade php</tspan></text>
+<text x="24" y="760" xml:space="preserve"><tspan fill="#d4d4d4"></tspan></text>
+<text x="24" y="782" xml:space="preserve"><tspan fill="#e3b341" font-weight="bold">P1  PATCH THIS WEEK</tspan></text>
+<text x="24" y="804" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">  guzzlehttp/guzzle 7.4.0 (composer.lock)</tspan><tspan fill="#7ee787"> → 7.15.2</tspan></text>
+<text x="24" y="826" xml:space="preserve"><tspan fill="#d4d4d4">    CVE-2022-29248: Cross-domain cookie leakage in Guzzle (+13 more: CVE-2022-31090, CVE-2022-31091, CVE-2022-31042,</tspan></text>
+<text x="24" y="848" xml:space="preserve"><tspan fill="#d4d4d4">          CVE-2022-31043, …)</tspan></text>
+<text x="24" y="870" xml:space="preserve"><tspan fill="#8b949e">    why: CVSS 8 high · 13 advisories on this version</tspan></text>
+<text x="24" y="892" xml:space="preserve"><tspan fill="#79c0ff">    $</tspan><tspan fill="#d4d4d4"> composer require guzzlehttp/guzzle:^7.15.2 --update-with-all-dependencies</tspan></text>
 </svg>

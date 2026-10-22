@@ -11,6 +11,10 @@
  *   endoflife.date     latest patch release per runtime line, and whether a line is EOL
  *   CISA KEV           vulnerabilities confirmed exploited in the wild
  *   FIRST EPSS         probability a CVE is exploited in the next 30 days
+ *   Siren              what is spreading right now: CISA alerts, KEV additions in the last 3 days,
+ *                      Hacker News front page and Google News headlines (fixed queries, nothing
+ *                      about the project is sent), matched against this project and against the
+ *                      software everyone runs (OS, CPU, OpenSSL, Docker, browsers)
  *
  * Priority (the "traction" score) is explained in references/priority.md.
  *
@@ -39,6 +43,7 @@ function parseArgs(argv) {
     dirs: [], json: false, md: false, hook: false, quiet: false, offline: false,
     noCache: false, cacheTtl: 6 * 3600, failOn: 'none', min: 'P3', local: false,
     all: false, timeout: 15_000, help: false, version: false, color: process.stdout.isTTY,
+    news: true, allNews: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -56,6 +61,8 @@ function parseArgs(argv) {
       case '--min': opts.min = String(next()).toUpperCase(); break;
       case '--local': opts.local = true; break;
       case '--all': opts.all = true; break;
+      case '--no-news': opts.news = false; break;
+      case '--news': opts.allNews = true; break;
       case '--timeout': opts.timeout = Number(next()); break;
       case '--help': case '-h': opts.help = true; break;
       case '--version': case '-v': opts.version = true; break;
@@ -80,6 +87,8 @@ Options:
   --min P0..P3      only show findings at/above this level (default P3 = all)
   --local           also check runtimes installed on this machine (php -v, node -v, ...)
   --all             treat <dir> as a folder of projects and scan each one
+  --news            show everything spreading in the news, not only what touches this project
+  --no-news         skip the siren feeds (CISA alerts, KEV additions, Hacker News, Google News)
   --offline         use cached feed data only
   --no-cache        ignore cached feed data
   --cache-ttl SEC   feed cache lifetime (default 21600 = 6h)
@@ -450,6 +459,141 @@ async function feedEpss(cves, opts) {
   return store;
 }
 
+// ---------------------------------------------------------------------------
+// Siren: what is spreading right now, with or without this project
+// ---------------------------------------------------------------------------
+
+/** Software nearly every developer and server runs. News about these is worth one line even when the project is not affected. */
+export const UNIVERSAL_TERMS = ['windows', 'linux', 'kernel', 'macos', 'ios', 'android', 'chrome', 'chromium', 'firefox', 'safari', 'edge browser',
+  'openssl', 'openssh', 'ssh', 'glibc', 'sudo', 'systemd', 'docker', 'kubernetes', 'git', 'curl', 'intel', 'amd', 'arm', 'cpu', 'processor', 'firmware',
+  'bios', 'uefi', 'microcode', 'vmware', 'wifi', 'wi-fi', 'bluetooth', 'dns', 'tls', 'router', 'cisco', 'fortinet', 'palo alto', 'citrix', 'ivanti',
+  'exchange server', 'sharepoint', 'outlook', 'microsoft office', '7-zip', 'winrar', 'java', 'jvm', 'log4j', 'xz', 'npm', 'pypi', 'github actions', 'cloudflare', 'aws', 'azure'];
+
+const PRODUCT_TERMS = { php: ['php'], node: ['node.js', 'nodejs', 'node js'], python: ['python', 'cpython'], ruby: ['ruby', 'rails'], go: ['golang', 'go toolchain'], nginx: ['nginx'], wordpress: ['wordpress'] };
+/** Products the news names often. Used to label and cluster headlines even when this project does not use them; they never count as "touches". */
+const KNOWN_TERMS = [...new Set(Object.values(PRODUCT_TERMS).flat())].concat(['django', 'laravel', 'symfony', 'react', 'next.js', 'angular', 'vue', 'spring', 'jquery', 'drupal', 'joomla', 'magento',
+  'redis', 'postgres', 'postgresql', 'mysql', 'mariadb', 'mongodb', 'elasticsearch', 'jenkins', 'gitlab', 'apache', 'tomcat', 'struts', 'wordpress plugin', 'chatgpt', 'copilot', 'slack', 'zoom', 'teams']);
+const TERM_LABELS = { php: 'PHP', 'node.js': 'Node.js', nodejs: 'Node.js', 'node js': 'Node.js', python: 'Python', cpython: 'Python', ruby: 'Ruby', rails: 'Rails', golang: 'Go', nginx: 'nginx', wordpress: 'WordPress',
+  linux: 'Linux', kernel: 'Linux kernel', windows: 'Windows', macos: 'macOS', ios: 'iOS', android: 'Android', chrome: 'Chrome', chromium: 'Chromium', firefox: 'Firefox', safari: 'Safari', openssl: 'OpenSSL', openssh: 'OpenSSH',
+  docker: 'Docker', kubernetes: 'Kubernetes', git: 'Git', curl: 'curl', intel: 'Intel CPUs', amd: 'AMD CPUs', cpu: 'CPUs', processor: 'processors', firmware: 'firmware', vmware: 'VMware', cloudflare: 'Cloudflare', aws: 'AWS', azure: 'Azure',
+  'github actions': 'GitHub Actions', npm: 'npm', pypi: 'PyPI', java: 'Java', log4j: 'Log4j', xz: 'xz', glibc: 'glibc', sudo: 'sudo', systemd: 'systemd', django: 'Django', laravel: 'Laravel', react: 'React', 'next.js': 'Next.js', jenkins: 'Jenkins', gitlab: 'GitLab' };
+const termLabel = (t) => TERM_LABELS[t] || t;
+const ECOSYSTEM_TERMS = { npm: ['npm'], Packagist: ['composer', 'packagist'], PyPI: ['pypi', 'pip'], Go: ['go module'], 'crates.io': ['crates.io', 'cargo'], RubyGems: ['rubygems'], NuGet: ['nuget'], Maven: ['maven'] };
+const TERM_STOPLIST = new Set(['core', 'utils', 'util', 'common', 'test', 'tests', 'types', 'tools', 'client', 'server', 'base', 'config', 'plugin', 'runtime', 'support', 'shared', 'framework', 'security', 'update', 'patch']);
+
+/** Words that describe this project: runtimes, ecosystems and package names, for matching against headlines. */
+export function projectTerms(inv) {
+  const terms = new Map(); // term -> what it stands for
+  for (const r of inv.runtimes || []) for (const t of PRODUCT_TERMS[r.product] || []) terms.set(t, RUNTIME_META[r.product]?.label || r.product);
+  for (const p of inv.packages || []) {
+    for (const t of ECOSYSTEM_TERMS[p.ecosystem] || []) terms.set(t, p.ecosystem);
+    const last = p.name.toLowerCase().split(/[/:]/).pop().replace(/^@/, '');
+    if (last.length >= 4 && !TERM_STOPLIST.has(last) && !/^\d/.test(last)) terms.set(last, p.name);
+  }
+  return terms;
+}
+
+function termRegex(term) { return new RegExp(`(^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z])`, 'i'); }
+export function extractTerms(text, terms) {
+  const t = String(text || '');
+  const cves = uniqBy(t.match(/CVE-\d{4}-\d{4,}/gi) || [], (x) => x.toUpperCase()).map((x) => x.toUpperCase());
+  const words = [];
+  for (const term of terms) if (termRegex(term).test(t)) words.push(term);
+  return { cves, words };
+}
+
+function rssItems(xml, source) {
+  const unesc = (s) => String(s || '').replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/<[^>]+>/g, '').trim();
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => {
+    const it = m[1];
+    const get = (tag) => unesc((it.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`)) || [])[1]);
+    let title = get('title'); const outlet = get('source');
+    if (outlet && title.endsWith(` - ${outlet}`)) title = title.slice(0, -(outlet.length + 3));
+    return { source, title, url: get('link'), outlet: outlet || null, points: 0, publishedAt: new Date(get('pubDate') || Date.now()).toISOString() };
+  }).filter((i) => i.title);
+}
+
+/** Headlines from the last 48 hours. Fixed queries: nothing about the project leaves the machine. Cached one hour. */
+async function feedWildfire(opts) {
+  const cached = cacheGet('wildfire.json', opts.noCache ? 0 : 3600); if (cached) return cached;
+  if (opts.offline) return cacheGet('wildfire.json', null) || { items: [], fetchedAt: null, errors: ['offline'] };
+  const since = Math.floor((Date.now() - 2 * DAY) / 1000);
+  const errors = []; const items = [];
+  const grab = async (label, fn) => { try { items.push(...await fn()); } catch (e) { errors.push(`${label}: ${e.message}`); } };
+  await Promise.all([
+    ...['vulnerability', 'exploit', 'zero-day'].map((q) => grab(`hn:${q}`, async () => {
+      const j = await http(`https://hn.algolia.com/api/v1/search?tags=story&query=${encodeURIComponent(q)}&numericFilters=points%3E30,created_at_i%3E${since}&hitsPerPage=30`, { timeout: opts.timeout });
+      return (j.hits || []).map((h) => ({ source: 'hn', title: h.title || '', url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`, outlet: 'Hacker News', points: h.points || 0, publishedAt: h.created_at }));
+    })),
+    grab('google-news', async () => {
+      const res = await fetch('https://news.google.com/rss/search?q=(vulnerability+OR+zero-day+OR+exploited+OR+CVE)+when:2d&hl=en-US&gl=US&ceid=US:en', { headers: { 'User-Agent': 'Mozilla/5.0 ' + UA }, signal: AbortSignal.timeout(opts.timeout) });
+      if (!res.ok) throw new Error(`${res.status}`);
+      return rssItems(await res.text(), 'news');
+    }),
+    grab('cisa-alerts', async () => {
+      const res = await fetch('https://www.cisa.gov/cybersecurity-advisories/alerts.xml', { headers: { 'User-Agent': 'Mozilla/5.0 ' + UA }, signal: AbortSignal.timeout(opts.timeout) });
+      if (!res.ok) throw new Error(`${res.status}`);
+      return rssItems(await res.text(), 'cisa').filter((i) => (daysAgo(i.publishedAt) ?? 99) <= 7);
+    }),
+  ]);
+  const out = { items: uniqBy(items, (i) => i.source + '|' + i.title.toLowerCase()), fetchedAt: new Date().toISOString(), errors };
+  if (items.length) cacheSet('wildfire.json', out);
+  return out;
+}
+
+/**
+ * Cluster headlines, KEV additions and CISA alerts into "what is spreading",
+ * then say whether each cluster touches this project, the software everyone
+ * runs, or is simply too big to ignore (front page of Hacker News).
+ */
+export function wildfireMatch(items, kevRecent, terms, { allNews = false } = {}) {
+  const universal = new Set(UNIVERSAL_TERMS);
+  // Order matters: a headline clusters under its first matching term, so this project's own terms win, then well-known products, then the universal list.
+  const vocab = [...new Set([...terms.keys(), ...KNOWN_TERMS, ...UNIVERSAL_TERMS])];
+  const all = [...items.map((i) => ({ ...i })), ...kevRecent.map((v) => ({ source: 'kev', title: `${v.vendorProject} ${v.product}: ${v.name}`, url: `https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${v.cveID}`, outlet: 'CISA KEV', points: 0, publishedAt: v.dateAdded, cve: v.cveID, dueDate: v.dueDate }))];
+  const clusters = new Map();
+  for (const it of all) {
+    const { cves, words } = extractTerms(it.title, vocab);
+    if (it.cve) cves.unshift(it.cve);
+    if (!cves.length && !words.length) continue; // generic security news, no product named
+    const key = cves[0] || words[0];
+    if (!clusters.has(key)) clusters.set(key, { key, cves: [], terms: [], items: [], sources: new Set(), outlets: new Set(), hnPoints: 0 });
+    const c = clusters.get(key);
+    c.items.push(it); c.sources.add(it.source); if (it.outlet) c.outlets.add(it.outlet);
+    c.cves = uniqBy([...c.cves, ...cves], (x) => x); c.terms = uniqBy([...c.terms, ...words], (x) => x);
+    c.hnPoints = Math.max(c.hnPoints, it.points || 0);
+  }
+  // merge clusters keyed by a CVE into the cluster of the product they name, when both exist
+  for (const c of [...clusters.values()]) {
+    if (!/^CVE-/.test(c.key)) continue;
+    const host = c.terms.map((t) => clusters.get(t)).find((h) => h && h !== c);
+    if (host) { host.items.push(...c.items); c.sources.forEach((s) => host.sources.add(s)); c.outlets.forEach((o) => host.outlets.add(o)); host.cves = uniqBy([...host.cves, ...c.cves], (x) => x); host.hnPoints = Math.max(host.hnPoints, c.hnPoints); clusters.delete(c.key); }
+  }
+  const hot = [];
+  for (const c of clusters.values()) {
+    const projectHits = c.terms.filter((t) => terms.has(t));
+    // "Universal" only when the story is primarily about that software: a PHP story that mentions Cloudflare is still a PHP story.
+    const primary = /^CVE-/.test(c.key) ? c.terms[0] : c.key;
+    const universalHits = primary && universal.has(primary) ? [primary] : [];
+    const headlines = c.items.filter((i) => i.source === 'news').length;
+    c.score = c.sources.size + Math.log10(c.hnPoints + 1) + headlines / 3 + (c.sources.has('cisa') ? 2 : 0) + (c.sources.has('kev') ? 3 : 0);
+    c.mega = c.hnPoints >= 500 || headlines >= 8 || (c.sources.has('cisa') && c.sources.has('kev'));
+    c.touches = projectHits.length ? 'project' : universalHits.length ? 'universal' : null;
+    c.about = projectHits.map((t) => terms.get(t)).concat(universalHits.map(termLabel)).filter(Boolean);
+    if (!allNews && !c.touches && !c.mega) continue;
+    if (c.touches !== 'project' && !c.mega && c.score < 2.5) continue; // one quiet headline about Linux is not a siren
+    const lead = [...c.items].sort((a, b) => (b.source === 'cisa') - (a.source === 'cisa') || (b.points || 0) - (a.points || 0))[0];
+    const label = c.touches === 'project' ? c.about[0] : c.terms.length ? termLabel(c.terms[0]) : c.key;
+    hot.push({ key: c.key, label, cves: c.cves, terms: c.terms, touches: c.touches, mega: c.mega, score: Math.round(c.score * 10) / 10,
+      headline: lead.title, url: lead.url, outlet: lead.outlet, hnPoints: c.hnPoints, headlines, cisa: c.sources.has('cisa'), kev: c.sources.has('kev'), dueDate: c.items.find((i) => i.dueDate)?.dueDate || null,
+      outlets: [...c.outlets].filter((o) => o !== 'Hacker News' && o !== 'CISA KEV').slice(0, 4), sources: [...c.sources] });
+  }
+  hot.sort((a, b) => (a.touches === 'project') - (b.touches === 'project') * 1 || b.score - a.score);
+  hot.sort((a, b) => (b.touches === 'project' ? 1 : 0) - (a.touches === 'project' ? 1 : 0) || b.score - a.score);
+  const emergency = hot.some((h) => (h.touches === 'project' && h.score >= 3) || (h.touches === 'universal' && (h.kev || h.cisa || h.mega)));
+  return { hot, emergency };
+}
+
 async function feedEol(product, opts) {
   const name = `eol-${product}.json`;
   const cached = cacheGet(name, opts.noCache ? 0 : opts.cacheTtl); if (cached) return cached;
@@ -552,6 +696,13 @@ export function prioritize(f) {
   // A vendor emergency release only counts for the CVEs it was shipped for (fresh ones), not every old CVE on the same runtime.
   if (f.emergencyRelease && age != null && age <= 30) { level = Math.max(0, level - 1); reasons.push(`vendor shipped an emergency release on ${f.emergencyRelease}`); }
 
+  if (f.wildfire) {
+    level = Math.max(0, level - 1);
+    const w = f.wildfire; const bits = [];
+    if (w.hnPoints) bits.push(`Hacker News ${w.hnPoints} points`); if (w.headlines) bits.push(`${plural(w.headlines, 'news headline')}`); if (w.cisa) bits.push('CISA alert');
+    reasons.push(`spreading now: ${bits.join(', ') || 'in the news'} in the last 48h`);
+  }
+
   if (f.dev && !f.kev) { level = Math.min(3, level + 1); reasons.push('dev-only dependency'); }
   if (f.context === 'constraint' || f.context === 'ci' || f.context === 'implied') reasons.push('deployed version not pinned in repo — verify on the server');
   if (!f.fixedVersion && f.fixAvailable === false) reasons.push('no fix published yet — mitigate (WAF, disable feature) and watch');
@@ -638,12 +789,17 @@ export async function scanProject(root, opts) {
 
   // --- feeds (in parallel) --------------------------------------------------
   const runtimeProducts = uniqBy(inv.runtimes.map((r) => r.product), (x) => x).filter((p) => RUNTIME_META[p]);
-  const [kev, osv, eols, nvds] = await Promise.all([
+  const [kev, osv, eols, nvds, wildfire] = await Promise.all([
     feedKev(opts).catch((e) => { log.msg(`KEV unavailable (${e.message})`); return cacheGet('kev.json', null) || { vulnerabilities: [] }; }),
     feedOsv(inv.packages, opts),
     Promise.all(runtimeProducts.map((p) => feedEol(RUNTIME_META[p].eol, opts))),
     Promise.all(runtimeProducts.map((p) => feedNvd(RUNTIME_META[p].cpe, opts))),
+    opts.news === false ? Promise.resolve({ items: [], fetchedAt: null, errors: [] }) : feedWildfire(opts).catch((e) => ({ items: [], fetchedAt: null, errors: [e.message] })),
   ]);
+  for (const e of wildfire.errors || []) log.msg(`siren feed unavailable (${e})`);
+  const kevRecent = (kev.vulnerabilities || []).filter((v) => (daysAgo(v.dateAdded) ?? 99) <= 3);
+  const terms = projectTerms(inv);
+  const siren = wildfireMatch(wildfire.items, opts.news === false ? [] : kevRecent, terms, { allNews: opts.allNews });
   const kevById = new Map((kev.vulnerabilities || []).map((v) => [v.cveID, v]));
   const eolByProduct = Object.fromEntries(runtimeProducts.map((p, i) => [p, eols[i]]));
   const nvdByProduct = Object.fromEntries(runtimeProducts.map((p, i) => [p, nvds[i]]));
@@ -725,6 +881,10 @@ export async function scanProject(root, opts) {
     f.kev = kevHit ? { dateAdded: kevHit.dateAdded, dueDate: kevHit.dueDate, ransomware: kevHit.ransomware } : null;
     const scores = f.cves.map((c) => epss[c]).filter((e) => e && e.epss != null);
     f.epss = scores.length ? scores.reduce((a, b) => (b.epss > a.epss ? b : a)) : null;
+    // Spreading now: a headline names one of this finding's CVEs, or names the product while the CVE is fresh.
+    const own = f.kind === 'package' ? [f.name.toLowerCase().split(/[/:]/).pop()] : PRODUCT_TERMS[f.product] || [];
+    f.wildfire = siren.hot.find((h) => h.cves.some((c) => f.cves.includes(c))) || ((daysAgo(f.published) ?? 999) <= 30 ? siren.hot.find((h) => h.touches === 'project' && h.terms.some((t) => own.includes(t))) : null) || null;
+    if (f.wildfire) f.wildfire = { label: f.wildfire.label, headline: f.wildfire.headline, url: f.wildfire.url, hnPoints: f.wildfire.hnPoints, headlines: f.wildfire.headlines, cisa: f.wildfire.cisa, kev: f.wildfire.kev };
     const pr = prioritize(f); f.priority = pr.level; f.priorityLabel = pr.label; f.reasons = pr.reasons;
   }
 
@@ -736,9 +896,16 @@ export async function scanProject(root, opts) {
   const groups = groupFindings(deduped);
   return {
     root, files, inventory: { packages: inv.packages.length, runtimes: inv.runtimes }, findings: deduped, groups, notes,
+    siren: { hot: siren.hot, emergency: siren.emergency, fetchedAt: wildfire.fetchedAt, kevRecent: kevRecent.length, errors: wildfire.errors || [] },
     sources: { kev: { catalogVersion: kev.catalogVersion, count: kev.count }, epssDate: Object.values(epss)[0]?.date || null, nvdWindowDays: 119, scannedAt: new Date().toISOString() },
     durationMs: Date.now() - started,
   };
+}
+
+function sirenLine(h) {
+  const where = h.touches === 'project' ? 'affects this project' : h.touches === 'universal' ? 'not in this repo, but on your servers and laptop' : 'not this project, but everyone is talking about it';
+  const ev = []; if (h.cisa) ev.push('CISA alert'); if (h.kev) ev.push(`CISA KEV${h.dueDate ? ', fix due ' + h.dueDate : ''}`); if (h.hnPoints) ev.push(`Hacker News ${h.hnPoints} points`); if (h.headlines) ev.push(`${plural(h.headlines, 'headline')}${h.outlets.length ? ' (' + h.outlets.join(', ') + ')' : ''}`);
+  return { where, evidence: ev.join(' · ') };
 }
 
 function cycleOf(product, version) {
@@ -842,6 +1009,16 @@ export function renderHuman(reports, opts) {
     const head = `${paint(opts, 'bold', name)} — ${rep.inventory.packages} packages, ${rep.inventory.runtimes.length} runtime refs · ${plural(groups.length, 'component')} to patch covering ${plural(s.cves, 'CVE')} · ` +
       LEVELS.map((l) => paint(opts, PCOLOR[l], `${l}:${s[l]}`)).join(' ');
     out.push(head);
+    if (rep.siren?.hot?.length) {
+      out.push(''); out.push(paint(opts, 'magenta', `🔥 SPREADING NOW (last 48h)${rep.siren.emergency ? ' — emergency: re-checking hourly' : ''}`));
+      for (const h of rep.siren.hot.slice(0, 6)) {
+        const { where, evidence } = sirenLine(h);
+        out.push(`  ${paint(opts, 'bold', h.label)} → ${where}`);
+        out.push(`    "${h.headline}" ${paint(opts, 'dim', '— ' + evidence)}`);
+        if (h.cves.length) out.push(`    ${paint(opts, 'dim', h.cves.slice(0, 4).join(', '))}`);
+        out.push(`    ${paint(opts, 'dim', h.url)}`);
+      }
+    }
     const shown = groups.filter((g) => LEVELS.indexOf(g.priority) <= LEVELS.indexOf(opts.min));
     if (!shown.length) out.push(paint(opts, 'green', '  ✔ nothing at or above ' + opts.min));
     let lastLevel = null;
@@ -866,6 +1043,10 @@ export function renderMarkdown(reports) {
     const groups = rep.groups || []; const s = summarize(groups); const name = path.basename(rep.root) || rep.root;
     out.push(`## ${name}: ${plural(s.P0, 'component')} to patch today, ${s.P1} this week`);
     if (rep.empty) { out.push(rep.notes[0]); continue; }
+    if (rep.siren?.hot?.length) {
+      out.push('', '**🔥 Spreading now (last 48h)**', '');
+      for (const h of rep.siren.hot.slice(0, 6)) { const { where, evidence } = sirenLine(h); out.push(`- **${h.label}** → ${where}: [${h.headline.replace(/\]/g, ')')}](${h.url}) · ${evidence}${h.cves.length ? ' · ' + h.cves.slice(0, 3).join(', ') : ''}`); }
+    }
     const shown = groups.filter((g) => g.priority !== 'P3');
     if (shown.length) {
       out.push('', '| Priority | Component | Vulnerabilities | Why now | Fix |', '|---|---|---|---|---|');
@@ -883,13 +1064,19 @@ export function renderMarkdown(reports) {
 export function renderHook(rep, scriptPath) {
   const groups = rep.groups || [];
   const urgent = groups.filter((g) => g.priority === 'P0' || g.priority === 'P1');
-  if (!urgent.length) return '';
+  const sirens = (rep.siren?.hot || []).filter((h) => h.touches || h.mega).slice(0, 3);
+  if (!urgent.length && !sirens.length) return '';
   const s = summarize(groups);
-  const lines = ['<patchhero-alert>',
-    `patchhero: ${plural(s.P0, 'component')} to patch TODAY and ${s.P1} to patch this week in this project (${s.P2 + s.P3} lower priority, ${plural(s.cves, 'CVE')} in total). Scanned ${rep.sources?.scannedAt || 'now'}.`];
+  const lines = ['<patchhero-alert>'];
+  if (urgent.length) lines.push(`patchhero: ${plural(s.P0, 'component')} to patch TODAY and ${s.P1} to patch this week in this project (${s.P2 + s.P3} lower priority, ${plural(s.cves, 'CVE')} in total). Scanned ${rep.sources?.scannedAt || 'now'}.`);
+  else lines.push(`patchhero: nothing urgent in this project's dependencies (${s.P2 + s.P3} lower-priority items), but something is spreading right now:`);
+  for (const h of sirens) { const { where, evidence } = sirenLine(h); lines.push(`SIREN ${h.label} → ${where}: "${h.headline.slice(0, 110)}" [${evidence}]${h.cves.length ? ' ' + h.cves.slice(0, 2).join(', ') : ''} ${h.url}`); }
   for (const g of urgent.slice(0, 8)) lines.push(`${g.priority} ${subject(g)} ${fixLine(g)} — ${g.worst.cves[0] || g.worst.id}: ${g.worst.title.slice(0, 120)}${g.cves.length > 1 ? ` (+${g.cves.length - 1} more)` : ''} [${g.reasons.slice(0, 3).join('; ')}] fix: ${g.fix[0]}`);
   if (urgent.length > 8) lines.push(`…and ${urgent.length - 8} more P0/P1 components.`);
-  lines.push(`Before doing anything else, tell the user about the P0 items in one short paragraph and offer to run the patchhero skill to apply the fixes. Do not patch silently. Full report: node "${scriptPath}" "${rep.root}"`, '</patchhero-alert>');
+  const guidance = urgent.length
+    ? 'Before doing anything else, tell the user about the P0 items in one short paragraph and offer to run the patchhero skill to apply the fixes. Do not patch silently.'
+    : 'Before doing anything else, tell the user in one or two sentences what is spreading and what it means for them (a SIREN marked "servers and laptop" means update the operating system or that software where it runs; this repo is not affected). Do not patch anything.';
+  lines.push(`${guidance} Full report: node "${scriptPath}" "${rep.root}"`, '</patchhero-alert>');
   return lines.join('\n');
 }
 

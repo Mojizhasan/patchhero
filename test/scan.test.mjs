@@ -164,3 +164,43 @@ test('.patchhero.json ignore prefixes keep demo projects out of the inventory', 
   assert.ok(files.includes('package.json'), 'the repo root manifest is still found');
   assert.ok(!files.some((f) => f.startsWith('examples/') || f.startsWith('test/fixtures/')), `ignored paths leaked: ${files.filter((f) => /^(examples|test\/fixtures)\//.test(f)).join(', ')}`);
 });
+
+test('siren: headlines cluster by product, touch the project, and the Hacker News front page counts as mega', async () => {
+  const { projectTerms, extractTerms, wildfireMatch } = await import('../skills/patchhero/scripts/scan.mjs');
+  const inv = { runtimes: [{ product: 'php', version: '8.3.30' }], packages: [{ ecosystem: 'Packagist', name: 'guzzlehttp/guzzle', version: '7.4.0' }, { ecosystem: 'npm', name: 'qs', version: '6.7.0' }] };
+  const terms = projectTerms(inv);
+  assert.equal(terms.get('php'), 'PHP');
+  assert.equal(terms.get('guzzle'), 'guzzlehttp/guzzle');
+  assert.ok(!terms.has('qs'), 'two-letter package names are too noisy to match headlines');
+  assert.deepEqual(extractTerms('Cloudflare deploys protections against php2shell (CVE-2026-109618)', ['php', 'cloudflare']), { cves: ['CVE-2026-109618'], words: ['php', 'cloudflare'] });
+  assert.deepEqual(extractTerms('phpmyadmin bug', ['php']).words, [], 'php must not match inside another word');
+
+  const now = new Date().toISOString();
+  const items = [
+    { source: 'hn', title: 'Security advisory: Critical remote code execution vulnerabilities in PHP, update now', url: 'https://php.net', outlet: 'Hacker News', points: 1543, publishedAt: now },
+    { source: 'news', title: 'PHP Security Flaw Sets Off Global Rush to Patch', url: 'https://nyt', outlet: 'The New York Times', points: 0, publishedAt: now },
+    { source: 'news', title: 'What to know about the PHP bug affecting websites', url: 'https://cbs', outlet: 'CBS News', points: 0, publishedAt: now },
+    { source: 'cisa', title: 'Critical Vulnerabilities in PHP Require Immediate Patching', url: 'https://cisa', outlet: null, points: 0, publishedAt: now },
+    { source: 'hn', title: 'Several Linux kernel vulnerabilities posted to public mailing list', url: 'https://phoronix', outlet: 'Hacker News', points: 229, publishedAt: now },
+    { source: 'news', title: 'Qwen3-Coder writes less secure code when told a persona', url: 'https://x', outlet: 'Blog', points: 0, publishedAt: now },
+    { source: 'news', title: 'Rare Django bug fixed quietly', url: 'https://y', outlet: 'Blog', points: 0, publishedAt: now },
+  ];
+  const kevRecent = [{ cveID: 'CVE-2026-106931', vendorProject: 'EG Secure Solutions', product: 'SiteGuard Server Edition', name: 'OS Command Injection', dateAdded: now.slice(0, 10), dueDate: '2026-11-03' }];
+
+  const php = wildfireMatch(items, kevRecent, terms);
+  const labels = php.hot.map((h) => `${h.label}:${h.touches}`);
+  assert.equal(php.hot[0].label, 'PHP'); assert.equal(php.hot[0].touches, 'project');
+  assert.ok(php.hot[0].cisa && php.hot[0].hnPoints === 1543 && php.hot[0].headlines === 2, JSON.stringify(php.hot[0]));
+  assert.ok(labels.includes('Linux:universal'), labels.join(' | '));
+  assert.ok(!labels.some((l) => /Qwen|Django/.test(l)), 'generic or non-project single headlines stay out');
+  assert.ok(!labels.some((l) => /SiteGuard|CVE-2026-106931/.test(l)), 'a KEV entry for software nobody here runs is not a siren');
+  assert.equal(php.emergency, true);
+
+  const goInv = { runtimes: [{ product: 'go', version: '1.22.1' }], packages: [] };
+  const go = wildfireMatch(items, kevRecent, projectTerms(goInv));
+  const phpForGo = go.hot.find((h) => h.label === 'PHP');
+  assert.ok(phpForGo && phpForGo.touches === null && phpForGo.mega, 'a front-page story still shows for a project that does not use PHP, marked as not touching it');
+
+  const all = wildfireMatch(items, kevRecent, projectTerms(goInv), { allNews: true });
+  assert.ok(all.hot.some((h) => h.cves.includes('CVE-2026-106931')), '--news shows every clustered item including fresh KEV entries');
+});

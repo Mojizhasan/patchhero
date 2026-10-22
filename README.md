@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/hero.svg" alt="patchhero flying toward the viewer; behind it, the beaten names Heartbleed, Shellshock, WannaCry, Log4Shell, xz backdoor, PHP2Shell and the 2026 fridge hack" width="100%"></p>
+
 # patchhero
 
 **When a vulnerability gets traction, patch now.**
@@ -8,11 +10,14 @@ A Claude Code plugin and zero-dependency scanner that finds the vulnerabilities 
 
 That is the real output for [`examples/php-app`](examples/php-app) on 22 October 2026, the morning after [PHP2Shell](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching) (CVE-2026-109618 and CVE-2026-109619) was disclosed. It was not yet in CISA's exploited list and its EPSS score was 5%, so tools that rely on one signal called it "medium". patchhero called it P0, because it combines five signals: CVSS, CISA KEV, EPSS, disclosure age, and whether the vendor just shipped an emergency release.
 
+The names on the banner are real: Heartbleed, Shellshock, WannaCry, Log4Shell, the xz backdoor, PHP2Shell, and the October 2026 attack that heated the fridges of hundreds of French supermarkets to 50 °C through refrigeration controllers running firmware nobody updated. Different bugs, one pattern: the fix existed, and the software kept running without it. patchhero exists so that the next one is caught the morning it breaks, in every project you open, not months later from a customer.
+
 ## What you get
 
 1. **An alert when you open the project.** A SessionStart hook scans the project (cached six hours, read-only, silent when nothing is urgent) and Claude starts the session by telling you what to patch today.
 2. **A skill that patches with you.** `/patchhero` runs the scan, explains the P0/P1 items in plain words, asks before changing anything, applies the exact upgrade per ecosystem, re-scans to verify, runs your tests, and prepares the commit or PR.
-3. **A scheduled scan for every repo.** One workflow file: every six hours, a report in the job summary, an issue opened or updated when something is urgent, a red check on P0. Optionally Claude opens the fix PR.
+3. **A siren for what is spreading right now.** Every scan also reads the last 48 hours of CISA alerts, new entries in CISA's exploited-in-the-wild list, the Hacker News front page and Google News, clusters them by product, and says whether each story touches this project, the software everyone runs (your OS, CPU, OpenSSL, Docker, browser), or is simply too big to ignore. While something is spreading, the session-start check runs hourly.
+4. **A scheduled scan for every repo.** One workflow file: every six hours, a report in the job summary, an issue opened or updated when something is urgent, a red check on P0. Optionally Claude opens the fix PR.
 
 ## Install
 
@@ -44,8 +49,9 @@ node skills/patchhero/scripts/scan.mjs ~/projects --all   # one table across eve
 | "patch everything urgent" | upgrades from the top of the list down, verifies, summarises what still needs you |
 | "set this up for all my repos" | copies the GitHub Actions workflow, explains the three automation layers |
 | "scan all my projects" | `--all` over a folder of repositories, sorted by worst priority |
+| "what is going on out there?" | `--news`: everything spreading in the last 48 hours, with what it means for you |
 
-Scanner flags: `--json`, `--md`, `--min P1`, `--local` (check the runtimes installed on this machine too), `--all`, `--offline`, `--fail-on P0` (exit code 2 for CI).
+Scanner flags: `--json`, `--md`, `--min P1`, `--local` (check the runtimes installed on this machine too), `--all`, `--news` (show everything spreading, not only what touches this project), `--no-news`, `--offline`, `--fail-on P0` (exit code 2 for CI).
 
 ## How priority works
 
@@ -53,6 +59,7 @@ Scanner flags: `--json`, `--md`, `--min P1`, `--local` (check the runtimes insta
 | --- | --- | --- |
 | **P0** | patch today | in CISA KEV, or EPSS ≥ 30%, or CVSS ≥ 9, or a fresh high-severity CVE with an emergency vendor release |
 | **P1** | patch this week | CVSS 7 to 8.9, or EPSS ≥ 5% |
+| any | one level more urgent | the CVE or product is spreading in the news, on Hacker News or in a CISA alert right now |
 | **P2** | next release | CVSS 4 to 6.9, or a critical in a dev-only dependency |
 | **P3** | backlog | the rest |
 
@@ -86,8 +93,9 @@ All public, all free, no API keys:
 - [endoflife.date](https://endoflife.date) for the latest patch release of each runtime line and end-of-life dates
 - [CISA KEV](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) for vulnerabilities exploited in the wild
 - [FIRST EPSS](https://www.first.org/epss/) for exploitation probability
+- The siren: [CISA alerts](https://www.cisa.gov/news-events/cybersecurity-advisories), KEV entries added in the last 3 days, [Hacker News](https://hn.algolia.com/) stories with 30+ points and [Google News](https://news.google.com/) headlines from the last 48 hours, with fixed search terms
 
-Privacy: only package names and versions are sent (to OSV.dev); everything else is downloaded as whole feeds. No telemetry, no account, no network calls from the hook when the cached result is fresh. Feed data is cached in `~/.cache/patchhero`. Set `NVD_API_KEY` if you scan many runtimes in CI and hit NVD's unauthenticated rate limit.
+Privacy: only package names and versions are sent (to OSV.dev); everything else is downloaded as whole feeds, and the news queries are fixed strings that say nothing about your project. No telemetry, no account, no network calls from the hook when the cached result is fresh. Feed data is cached in `~/.cache/patchhero`. Set `NVD_API_KEY` if you scan many runtimes in CI and hit NVD's unauthenticated rate limit.
 
 ## Scheduled scans in GitHub Actions
 
