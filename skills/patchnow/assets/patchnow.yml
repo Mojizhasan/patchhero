@@ -11,6 +11,15 @@
 #
 # Nothing in the repository is modified. No secrets are needed beyond the
 # default GITHUB_TOKEN. Only package names and versions are sent to OSV.dev.
+#
+# Two things to know:
+#   - GitHub pauses scheduled workflows in a public repository after 60 days
+#     without commits. It emails you; one click on the Actions tab re-enables
+#     it, and pushes still trigger the scan. Private repositories are unaffected.
+#   - If this runner cannot reach github.com/Mojizhasan/patchnow (private fork,
+#     air-gapped runner), vendor the scanner instead: copy scan.mjs into
+#     .github/patchnow/scan.mjs, delete the "Fetch patchnow" step, and change
+#     the two "node .patchnow/..." paths to "node .github/patchnow/scan.mjs".
 
 name: patchnow
 
