@@ -1,0 +1,14 @@
+{
+  "name": "patchnow",
+  "displayName": "patchnow",
+  "version": "0.1.0",
+  "description": "Finds the vulnerabilities in your project that are getting traction right now (CISA KEV, EPSS, fresh critical CVEs, emergency vendor releases like PHP2Shell) and patches them first. Alerts at session start, patches on request, and can run on a schedule in GitHub Actions.",
+  "author": {
+    "name": "Mojizhasan",
+    "url": "https://github.com/Mojizhasan"
+  },
+  "homepage": "https://github.com/Mojizhasan/patchnow",
+  "repository": "https://github.com/Mojizhasan/patchnow",
+  "license": "MIT",
+  "keywords": ["security", "vulnerability", "cve", "patch", "dependencies", "php", "npm", "composer", "pypi", "osv", "kev", "epss"]
+}

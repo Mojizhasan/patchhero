@@ -1,0 +1,16 @@
+{
+  "name": "patchnow",
+  "description": "When a vulnerability gets traction, patch now. Priority patching for every project you open in Claude Code.",
+  "owner": {
+    "name": "Mojizhasan",
+    "url": "https://github.com/Mojizhasan"
+  },
+  "plugins": [
+    {
+      "name": "patchnow",
+      "source": "./",
+      "description": "Finds the vulnerabilities in your project that are getting traction right now and patches them first. Alerts at session start, patches on request, runs on a schedule in CI.",
+      "category": "security"
+    }
+  ]
+}

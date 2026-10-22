@@ -1,0 +1,4 @@
+# web
+django==4.2.0
+requests==2.25.0
+gunicorn>=21  # unpinned on purpose

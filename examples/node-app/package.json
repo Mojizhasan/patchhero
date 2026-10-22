@@ -1,0 +1,7 @@
+{
+  "name": "example-node-app",
+  "version": "1.0.0",
+  "dependencies": {"express": "4.17.1", "lodash": "4.17.15"},
+  "devDependencies": {"minimist": "1.2.5"},
+  "engines": {"node": ">=18"}
+}

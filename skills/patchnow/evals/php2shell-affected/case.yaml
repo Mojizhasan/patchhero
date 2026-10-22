@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: php2shell-affected
+expected_outcome: |
+  Runs the patchnow scanner on examples/php-app, reports that the Dockerfile pins
+  PHP 8.3.30 which is affected by CVE-2026-109618/109619, names the fixed version
+  8.3.36 (and the composer.json ^8.2 constraint meaning the server must be checked),
+  explains the priority in plain words, and does not modify any file because the
+  user asked not to.

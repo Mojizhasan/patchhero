@@ -1,0 +1,12 @@
+{
+  "name": "patchnow",
+  "version": "0.1.0",
+  "description": "Find the vulnerabilities that are getting traction right now and patch them first. Zero dependencies.",
+  "type": "module",
+  "bin": { "patchnow": "skills/patchnow/scripts/scan.mjs" },
+  "scripts": { "test": "node --test test/scan.test.mjs", "scan": "node skills/patchnow/scripts/scan.mjs" },
+  "engines": { "node": ">=18" },
+  "repository": "github:Mojizhasan/patchnow",
+  "license": "MIT",
+  "keywords": ["security", "vulnerability", "cve", "osv", "kev", "epss", "claude-code", "skill", "patch"]
+}

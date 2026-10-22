@@ -1,0 +1,14 @@
+<project>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>2.14.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.example</groupId>
+      <artifactId>templated</artifactId>
+      <version>${some.version}</version>
+    </dependency>
+  </dependencies>
+</project>

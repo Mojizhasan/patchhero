@@ -1,0 +1,101 @@
+# patchnow: scheduled vulnerability scan with priority
+#
+# Copy this file to .github/workflows/patchnow.yml in your repository.
+#
+# Every six hours (and on every push to the default branch) it scans the
+# repository's lockfiles, Dockerfiles and runtime version files against
+# OSV.dev, NVD, endoflife.date, CISA KEV and FIRST EPSS, then:
+#   - writes the report to the job summary,
+#   - opens or updates an issue labelled "patchnow" when P0/P1 findings exist,
+#   - fails the job on P0 (patch today) so the repository shows red.
+#
+# Nothing in the repository is modified. No secrets are needed beyond the
+# default GITHUB_TOKEN. Only package names and versions are sent to OSV.dev.
+
+name: patchnow
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scan:
+    name: Scan for vulnerabilities getting traction
+    runs-on: ubuntu-latest
+    outputs:
+      urgent: ${{ steps.scan.outputs.urgent }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch patchnow
+        uses: actions/checkout@v4
+        with:
+          repository: Mojizhasan/patchnow
+          path: .patchnow
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Scan
+        id: scan
+        run: |
+          set +e
+          node .patchnow/skills/patchnow/scripts/scan.mjs . --md --no-color --fail-on P1 > patchnow-report.md
+          code=$?
+          set -e
+          cat patchnow-report.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" = "2" ]; then echo "urgent=true" >> "$GITHUB_OUTPUT"; else echo "urgent=false" >> "$GITHUB_OUTPUT"; fi
+          if [ "$code" = "1" ]; then echo "::error::patchnow scan failed"; exit 1; fi
+
+      - name: Open or update the patchnow issue
+        if: steps.scan.outputs.urgent == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="patchnow: vulnerabilities to patch now"
+          gh label create patchnow --color B60205 --description "Opened by patchnow" 2>/dev/null || true
+          existing=$(gh issue list --label patchnow --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file patchnow-report.md
+            gh issue comment "$existing" --body "Report updated $(date -u +%Y-%m-%dT%H:%MZ) by patchnow."
+          else
+            gh issue create --title "$title" --label patchnow --body-file patchnow-report.md
+          fi
+
+      - name: Fail on P0 (patch today)
+        run: node .patchnow/skills/patchnow/scripts/scan.mjs . --quiet --no-color --offline --fail-on P0 > /dev/null
+
+  # Optional: let Claude Code apply the patches and open a pull request.
+  # Needs an ANTHROPIC_API_KEY repository secret and the patchnow plugin.
+  # Check https://github.com/anthropics/claude-code-action for the current
+  # input names before enabling, then remove the leading "# " on each line.
+  #
+  # autofix:
+  #   name: Open a fix PR with Claude Code
+  #   needs: scan
+  #   if: needs.scan.outputs.urgent == 'true'
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pull-requests: write
+  #     issues: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: anthropics/claude-code-action@v1
+  #       with:
+  #         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+  #         plugin_marketplaces: https://github.com/Mojizhasan/patchnow
+  #         plugins: patchnow@patchnow
+  #         prompt: |
+  #           Use the patchnow skill. Patch every P0 and P1 finding in this repository,
+  #           run the project's tests, and open a pull request titled
+  #           "patchnow: security patches" whose body is the markdown report.
+  #           Leave runtime findings that need a server change as a checklist in the PR.

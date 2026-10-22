@@ -1,0 +1,10 @@
+schema_version: "1.1"
+name: patch-node-lockfile
+context:
+  scaffold_script: place-files.sh
+expected_outcome: |
+  Runs the scanner, upgrades lodash (to at least 4.17.21, ideally 4.18.0), the
+  transitive qs via an npm override (>=6.16.0) and minimist, regenerates the
+  lockfile with npm, re-runs the scanner to verify nothing P0/P1 remains among
+  packages, and reports that Node 20 in .nvmrc is end-of-life with a recommendation
+  rather than silently bumping it.

@@ -1,0 +1,9 @@
+services:
+  web:
+    image: "wordpress:6.5-php8.2-apache"
+  proxy:
+    image: nginx:1.27.1-alpine
+  api:
+    image: ghcr.io/acme/api:latest
+  worker:
+    image: serversideup/php:8.3-fpm

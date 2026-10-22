@@ -1,0 +1,9 @@
+[[package]]
+name = "Django"
+version = "4.2.0"
+description = "A high-level Python web framework"
+
+[[package]]
+name = "requests"
+version = "2.25.0"
+description = "HTTP for Humans"
