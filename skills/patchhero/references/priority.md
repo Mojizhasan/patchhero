@@ -1,4 +1,4 @@
-# How patchnow decides what to patch first
+# How patchhero decides what to patch first
 
 The point of the priority score is to answer "what is getting traction right now?", not "what has the highest CVSS?". A ten-year-old critical CVE in a dev tool is not what people are scared of when a new exploit is in the news. The score combines five public signals; each one alone misses real cases.
 
@@ -36,7 +36,7 @@ CVE-2026-109618 and CVE-2026-109619 were disclosed on 21 October 2026 with fixes
 - Disclosed yesterday → rule 4
 - PHP shipped four emergency releases the same day → rule 5
 
-A KEV-only or EPSS-only tool would have called this "medium, watch". patchnow called it P0 for a `FROM php:8.3.30-fpm` Dockerfile and for a composer.json requiring `^8.2`, with the fixed versions listed. That is the gap this skill exists to close.
+A KEV-only or EPSS-only tool would have called this "medium, watch". patchhero called it P0 for a `FROM php:8.3.30-fpm` Dockerfile and for a composer.json requiring `^8.2`, with the fixed versions listed. That is the gap this skill exists to close.
 
 ## Explaining a priority to someone without a security background
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * patchnow — scan a project for vulnerabilities that are getting traction and
+ * patchhero — scan a project for vulnerabilities that are getting traction and
  * tell you exactly what to patch first.
  *
  * Zero dependencies. Node 18+. Reads lockfiles, manifests, Dockerfiles and
@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 const SELF = fileURLToPath(import.meta.url);
 
 export const VERSION = '0.1.0';
-const UA = `patchnow/${VERSION} (+https://github.com/Mojizhasan/patchnow)`;
+const UA = `patchhero/${VERSION} (+https://github.com/Mojizhasan/patchhero)`;
 const DAY = 86_400_000;
 
 // ---------------------------------------------------------------------------
@@ -68,7 +68,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-const HELP = `patchnow ${VERSION} — find the vulnerabilities that matter today and how to patch them
+const HELP = `patchhero ${VERSION} — find the vulnerabilities that matter today and how to patch them
 
 Usage: node scan.mjs [dir ...] [options]
 
@@ -94,7 +94,7 @@ Exit codes: 0 ok · 2 findings at/above --fail-on · 1 error
 // Small utilities
 // ---------------------------------------------------------------------------
 
-export const log = { quiet: false, msg(s) { if (!this.quiet) process.stderr.write(`patchnow: ${s}\n`); } };
+export const log = { quiet: false, msg(s) { if (!this.quiet) process.stderr.write(`patchhero: ${s}\n`); } };
 
 export function cmpVersions(a, b) {
   // Lenient comparison across ecosystems. Numeric segments compare numerically,
@@ -137,7 +137,7 @@ async function pMap(items, fn, concurrency = 6) {
 // Cache (feed data only — never project data)
 // ---------------------------------------------------------------------------
 
-const CACHE_DIR = process.env.PATCHNOW_CACHE_DIR || path.join(os.homedir(), '.cache', 'patchnow');
+const CACHE_DIR = process.env.PATCHHERO_CACHE_DIR || path.join(os.homedir(), '.cache', 'patchhero');
 function cachePath(name) { return path.join(CACHE_DIR, name); }
 function cacheGet(name, ttlSec) {
   try {
@@ -174,9 +174,9 @@ const SKIP_DIRS = new Set(['node_modules', 'vendor', '.git', 'dist', 'build', '.
 
 const MANIFEST_RE = /^(package\.json|package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|composer\.json|composer\.lock|requirements[^/]*\.txt|Pipfile\.lock|poetry\.lock|uv\.lock|pdm\.lock|pyproject\.toml|go\.mod|Cargo\.lock|Gemfile|Gemfile\.lock|packages\.lock\.json|.*\.csproj|pom\.xml|gradle\.lockfile|Dockerfile[^/]*|.*\.dockerfile|(docker-)?compose[^/]*\.ya?ml|\.php-version|\.nvmrc|\.node-version|\.python-version|\.ruby-version|\.tool-versions|runtime\.txt|\.go-version)$/i;
 
-/** Optional per-project config: `.patchnow.json` with {"ignore": ["examples", "test/fixtures"]} (directory prefixes relative to the project). */
+/** Optional per-project config: `.patchhero.json` with {"ignore": ["examples", "test/fixtures"]} (directory prefixes relative to the project). */
 export function projectConfig(root) {
-  const cfg = readJson(path.join(root, '.patchnow.json')) || {};
+  const cfg = readJson(path.join(root, '.patchhero.json')) || {};
   const ignore = (Array.isArray(cfg.ignore) ? cfg.ignore : []).map((p) => String(p).replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/\*\*?$/, '').replace(/\/$/, '')).filter(Boolean);
   return { ignore };
 }
@@ -875,7 +875,7 @@ export function renderMarkdown(reports) {
     out.push('');
   }
   const last = reports[reports.length - 1];
-  if (last?.sources) out.push(`<sub>Sources: OSV.dev, NVD, endoflife.date, CISA KEV ${last.sources.kev.catalogVersion || ''}, FIRST EPSS ${last.sources.epssDate || ''}. Scanned ${last.sources.scannedAt} by patchnow ${VERSION}.</sub>`);
+  if (last?.sources) out.push(`<sub>Sources: OSV.dev, NVD, endoflife.date, CISA KEV ${last.sources.kev.catalogVersion || ''}, FIRST EPSS ${last.sources.epssDate || ''}. Scanned ${last.sources.scannedAt} by patchhero ${VERSION}.</sub>`);
   return out.join('\n');
 }
 
@@ -885,11 +885,11 @@ export function renderHook(rep, scriptPath) {
   const urgent = groups.filter((g) => g.priority === 'P0' || g.priority === 'P1');
   if (!urgent.length) return '';
   const s = summarize(groups);
-  const lines = ['<patchnow-alert>',
-    `patchnow: ${plural(s.P0, 'component')} to patch TODAY and ${s.P1} to patch this week in this project (${s.P2 + s.P3} lower priority, ${plural(s.cves, 'CVE')} in total). Scanned ${rep.sources?.scannedAt || 'now'}.`];
+  const lines = ['<patchhero-alert>',
+    `patchhero: ${plural(s.P0, 'component')} to patch TODAY and ${s.P1} to patch this week in this project (${s.P2 + s.P3} lower priority, ${plural(s.cves, 'CVE')} in total). Scanned ${rep.sources?.scannedAt || 'now'}.`];
   for (const g of urgent.slice(0, 8)) lines.push(`${g.priority} ${subject(g)} ${fixLine(g)} — ${g.worst.cves[0] || g.worst.id}: ${g.worst.title.slice(0, 120)}${g.cves.length > 1 ? ` (+${g.cves.length - 1} more)` : ''} [${g.reasons.slice(0, 3).join('; ')}] fix: ${g.fix[0]}`);
   if (urgent.length > 8) lines.push(`…and ${urgent.length - 8} more P0/P1 components.`);
-  lines.push(`Before doing anything else, tell the user about the P0 items in one short paragraph and offer to run the patchnow skill to apply the fixes. Do not patch silently. Full report: node "${scriptPath}" "${rep.root}"`, '</patchnow-alert>');
+  lines.push(`Before doing anything else, tell the user about the P0 items in one short paragraph and offer to run the patchhero skill to apply the fixes. Do not patch silently. Full report: node "${scriptPath}" "${rep.root}"`, '</patchhero-alert>');
   return lines.join('\n');
 }
 
@@ -944,4 +944,4 @@ export async function main(argv = process.argv.slice(2)) {
 }
 
 const invokedDirectly = process.argv[1] && path.resolve(process.argv[1]) === SELF;
-if (invokedDirectly) main().then((code) => process.exit(code), (e) => { process.stderr.write(`patchnow: ${e.stack || e}\n`); process.exit(1); });
+if (invokedDirectly) main().then((code) => process.exit(code), (e) => { process.stderr.write(`patchhero: ${e.stack || e}\n`); process.exit(1); });

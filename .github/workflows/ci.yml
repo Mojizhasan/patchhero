@@ -17,4 +17,4 @@ jobs:
           node-version: 22
       - run: npm test
       - name: Live scan of the example projects
-        run: node skills/patchnow/scripts/scan.mjs examples/php-app examples/node-app examples/python-app --no-color
+        run: node skills/patchhero/scripts/scan.mjs examples/php-app examples/node-app examples/python-app --no-color

@@ -1,5 +1,5 @@
 {
-  "description": "At session start, scans the project's lockfiles, Dockerfiles and runtime version files against OSV, NVD, endoflife.date, CISA KEV and EPSS, and tells Claude which vulnerabilities to patch today. Read-only: it never changes project files. Cached per project for six hours. Disable with PATCHNOW_DISABLE=1.",
+  "description": "At session start, scans the project's lockfiles, Dockerfiles and runtime version files against OSV, NVD, endoflife.date, CISA KEV and EPSS, and tells Claude which vulnerabilities to patch today. Read-only: it never changes project files. Cached per project for six hours. Disable with PATCHHERO_DISABLE=1.",
   "hooks": {
     "SessionStart": [
       {

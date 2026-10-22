@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * patchnow SessionStart hook.
+ * patchhero SessionStart hook.
  *
  * Runs when a Claude Code session starts in a project. Scans the project for
  * vulnerabilities that are getting traction and, only if something is P0/P1,
@@ -10,7 +10,7 @@
  * six hours, keyed on the manifest files' paths and mtimes, so repeat session
  * starts cost milliseconds and never hit the network.
  *
- * Disable with PATCHNOW_DISABLE=1.
+ * Disable with PATCHHERO_DISABLE=1.
  */
 
 import fs from 'node:fs';
@@ -18,10 +18,10 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { scanProject, renderHook, findManifests, log } from '../skills/patchnow/scripts/scan.mjs';
+import { scanProject, renderHook, findManifests, log } from '../skills/patchhero/scripts/scan.mjs';
 
-const SCAN_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'patchnow', 'scripts', 'scan.mjs');
-const CACHE_DIR = process.env.PATCHNOW_CACHE_DIR || path.join(os.homedir(), '.cache', 'patchnow');
+const SCAN_SCRIPT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'skills', 'patchhero', 'scripts', 'scan.mjs');
+const CACHE_DIR = process.env.PATCHHERO_CACHE_DIR || path.join(os.homedir(), '.cache', 'patchhero');
 const PROJECT_TTL_MS = 6 * 3600 * 1000;
 const DEADLINE_MS = 25_000;
 
@@ -51,7 +51,7 @@ function inventoryHash(root, files) {
 }
 
 async function main() {
-  if (process.env.PATCHNOW_DISABLE === '1') return;
+  if (process.env.PATCHHERO_DISABLE === '1') return;
   let input = {};
   try { input = JSON.parse(await readStdin() || '{}'); } catch { /* not JSON, fine */ }
   const root = path.resolve(input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd());

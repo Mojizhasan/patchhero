@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inventory, findManifests, cmpVersions, cvss3Score, prioritize, imageRuntimes, groupFindings, LEVELS } from '../skills/patchnow/scripts/scan.mjs';
+import { inventory, findManifests, cmpVersions, cvss3Score, prioritize, imageRuntimes, groupFindings, LEVELS } from '../skills/patchhero/scripts/scan.mjs';
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const inv = (name) => { const root = path.join(FIX, name); return inventory(root, findManifests(root)); };
@@ -158,7 +158,7 @@ test('groupFindings takes the worst priority, unions CVEs and prefers a same-maj
   assert.ok(LEVELS.includes(jump[0].priority));
 });
 
-test('.patchnow.json ignore prefixes keep demo projects out of the inventory', () => {
+test('.patchhero.json ignore prefixes keep demo projects out of the inventory', () => {
   const repoRoot = path.join(FIX, '..', '..');
   const files = findManifests(repoRoot);
   assert.ok(files.includes('package.json'), 'the repo root manifest is still found');

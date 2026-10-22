@@ -1,7 +1,7 @@
 schema_version: "1.1"
 name: setup-scheduled-scans
 expected_outcome: |
-  Creates .github/workflows/patchnow.yml from the skill's assets template (scheduled
+  Creates .github/workflows/patchhero.yml from the skill's assets template (scheduled
   run, issue creation, fail on P0), explains that the same file goes into each other
   repo, mentions the session-start alert that comes with the plugin and the optional
   Claude autofix job needing an ANTHROPIC_API_KEY secret, and does not enable the
