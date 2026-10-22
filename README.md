@@ -4,21 +4,7 @@
 
 A Claude Code plugin and zero-dependency scanner that finds the vulnerabilities in your project that matter *today* (not the 400 you can ignore), tells you exactly what to change, and patches them with you. It alerts the moment you open a project, runs on a schedule in GitHub Actions, and explains every priority in plain words for people who never had a security background.
 
-```
-php-app — 4 packages, 3 runtime refs · 4 components to patch covering 22 CVEs · P0:2 P1:1 P2:1 P3:0
-
-P0  PATCH TODAY
-  PHP 8.3.30 (Dockerfile:1) → 8.3.36
-    CVE-2026-109618: PHP uses longjmp() for out-of-memory (OOM) errors to exit the current context... (+4 more)
-    why: CVSS 9.2 critical · EPSS 5.3% (top 7% of all CVEs) · disclosed yesterday · vendor shipped an emergency release on 2026-10-21
-    $ Dockerfile:1: change 8.3.30 → 8.3.36
-    $ Rebuild and redeploy the image
-
-P1  PATCH THIS WEEK
-  guzzlehttp/guzzle 7.4.0 (composer.lock) → 7.15.2
-    CVE-2022-29248: Cross-domain cookie leakage in Guzzle (+13 more)
-    $ composer require guzzlehttp/guzzle:^7.15.2 --update-with-all-dependencies
-```
+<p align="center"><img src="docs/demo.svg" alt="patchnow scan of examples/php-app the morning after PHP2Shell: P0 PHP 8.3.30 in Dockerfile, upgrade to 8.3.36" width="100%"></p>
 
 That is the real output for [`examples/php-app`](examples/php-app) on 22 October 2026, the morning after [PHP2Shell](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching) (CVE-2026-109618 and CVE-2026-109619) was disclosed. It was not yet in CISA's exploited list and its EPSS score was 5%, so tools that rely on one signal called it "medium". patchnow called it P0, because it combines five signals: CVSS, CISA KEV, EPSS, disclosure age, and whether the vendor just shipped an emergency release.
 
